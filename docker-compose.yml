@@ -1,18 +1,23 @@
 version: '3.8'
 services:
   app:
-    image: melekmsallem/projet-devops:${TAG:-latest}
-    ports:
-      - "8080:8080"
+    image: melekmsallem/projet-devops:${TAG}
+    ports: ["8080:8080"]
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/animaldb
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/animaldb?createDatabaseIfNotExist=true
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
 
   db:
     image: mysql:5.7
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: animaldb
