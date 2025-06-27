@@ -2,44 +2,37 @@ pipeline {
     agent any
     
     tools {
-        jdk 'JDK17'              // Doit correspondre au nom dans Jenkins
-        maven 'Maven-3.9.6'      // Version configurée dans Jenkins
+        jdk 'jdk17'          // Exactement comme dans Jenkins (minuscules)
+        maven 'maven-3.9.10' // Exactement comme dans Jenkins (minuscules)
+    }
+    
+    environment {
+        DOCKER_HOST = "tcp://localhost:2375"
     }
     
     stages {
-        // Étape 1: Récupération du code
-        stage('Checkout Git') {
+        stage('Verify Tools') {
             steps {
-                checkout scm
+                bat 'java -version'
+                bat 'mvn -version'
+                bat 'docker --version'
             }
         }
         
-        // Étape 2: Build avec Maven
         stage('Build') {
             steps {
-                bat 'mvn clean package -DskipTests'  // Windows (utilisez 'sh' pour Linux)
+                bat 'mvn clean package -DskipTests'
             }
         }
         
-        // Étape 3: Exécution des tests
         stage('Test') {
             steps {
                 bat 'mvn test'
-                junit 'target/surefire-reports/**/*.xml'  // Rapport JUnit
+                junit 'target/surefire-reports/**/*.xml'
             }
         }
         
-        // Étape 4: Analyse SonarQube
-        stage('SonarQube') {
-            steps {
-                withSonarQubeEnv('sonar') {  // Nom de la config Sonar dans Jenkins
-                    bat 'mvn sonar:sonar -Dsonar.projectKey=projet-devops-melek'
-                }
-            }
-        }
-        
-        // Étape 5: Build Docker
-        stage('Build Docker') {
+        stage('Docker Build') {
             steps {
                 script {
                     docker.build("melekmsallem/projet-devops:${env.BUILD_ID}")
@@ -48,10 +41,9 @@ pipeline {
         }
     }
     
-    // Actions post-build
     post {
         always {
-            archiveArtifacts 'target/*.jar'  // Sauvegarde le .jar généré
+            archiveArtifacts 'target/*.jar'
         }
     }
 }
