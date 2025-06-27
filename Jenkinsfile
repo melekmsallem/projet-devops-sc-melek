@@ -8,7 +8,6 @@ pipeline {
     
     environment {
         DOCKER_HOST = "tcp://localhost:2375"
-        SONAR_SCANNER_OPTS = "-Xmx1024m"
     }
 
     stages {
@@ -20,41 +19,34 @@ pipeline {
             }
         }
 
-        stage('List Files') {
-            steps {
-                bat '''
-                echo Liste des fichiers :
-                dir
-                '''
-            }
-        }
-
         stage('Build') {
             steps {
                 bat 'mvn clean package -DskipTests'
             }
         }
 
-        stage('Tests & Qualité') {
+        stage('Test') {
             steps {
+                // Étape 1: Exécuter les tests et générer le rapport Jacoco
                 bat 'mvn test jacoco:report'
-                junit '**/target/surefire-reports/*.xml'
-                jacoco execPattern: '**/target/jacoco.exec'
 
-                // Analyse SonarQube
-                withSonarQubeEnv('SonarQube') {
-                    bat 'mvn sonar:sonar -Dsonar.projectKey=adoption-project -Dsonar.projectName=Adoption_Project'
-                }
+                // Étape 2: Publier les résultats JUnit
+                junit '**/target/surefire-reports/*.xml'
+
+                // Étape 3: Publier les résultats JaCoCo (seulement si le plugin est installé)
+                jacoco(
+                    execPattern: '**/target/jacoco.exec',
+                    classPattern: '**/target/classes',
+                    sourcePattern: '**/src/main/java',
+                    exclusionPattern: '**/target/generated-sources/**'
+                )
             }
         }
 
         stage('Docker Build') {
             steps {
                 script {
-                    def dockerfileExists = fileExists('Dockerfile')
-                    echo "Dockerfile existe: ${dockerfileExists}"
-
-                    if (dockerfileExists) {
+                    if (fileExists('Dockerfile')) {
                         docker.build("melekmsallem/projet-devops:${env.BUILD_ID}")
                     } else {
                         error 'ERREUR: Dockerfile non trouvé!'
@@ -66,11 +58,8 @@ pipeline {
         stage('Docker Compose') {
             steps {
                 script {
-                    def dockerImage = docker.build("melekmsallem/projet-devops:${env.BUILD_ID}")
-                    bat '''
-                    docker-compose down
-                    set TAG=%BUILD_ID% && docker-compose up -d --build
-                    '''
+                    bat 'docker-compose down'
+                    bat "set TAG=${env.BUILD_ID} && docker-compose up -d --build"
                 }
             }
         }
@@ -79,13 +68,7 @@ pipeline {
     post {
         always {
             archiveArtifacts 'target/*.jar'
-            cleanWs() // Nettoyage de l'espace de travail
-        }
-        success {
-            slackSend(color: 'good', message: "Build SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
-        }
-        failure {
-            slackSend(color: 'danger', message: "Build FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
+            cleanWs()
         }
     }
 }
