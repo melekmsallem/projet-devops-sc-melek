@@ -11,7 +11,7 @@ import java.util.List;
 @Slf4j
 @RequiredArgsConstructor
 @Service
-public class AdoptionServicesImpl implements IAdoptionServices{
+public class AdoptionServicesImpl implements IAdoptionServices {
     private final AdoptantRepository adoptantRepository;
     private final AnimalRepository animalRepository;
     private final AdoptionRepository adoptionRepository;
@@ -46,10 +46,8 @@ public class AdoptionServicesImpl implements IAdoptionServices{
     @Override
     public float calculFraisTotalAdoptions(int idAdoptant) {
         List<Adoption> adoptions = adoptionRepository.findByAdoptant_IdAdoptant(idAdoptant);
-        float total = 0f;
-        for (Adoption adoption : adoptions) {
-            total += adoption.getFrais();
-        }
-        return total;
+        return adoptions.stream()
+                .map(Adoption::getFrais)
+                .reduce(0f, Float::sum);
     }
 }

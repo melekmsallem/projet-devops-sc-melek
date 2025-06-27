@@ -1,16 +1,12 @@
 package com.example.adoptionproject.entities;
 
-import lombok.*;
-import lombok.experimental.FieldDefaults;
-
-import javax.persistence.Entity;
 import javax.persistence.*;
+import lombok.*;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity
 public class Animal {
     @Id
