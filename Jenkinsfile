@@ -56,6 +56,20 @@ pipeline {
                 }
             }
         }
+        stage('Docker Compose') {
+    steps {
+        script {
+            // Construit l'image si pas déjà faite
+            def dockerImage = docker.build("melekmsallem/projet-devops:${env.BUILD_ID}")
+            
+            // Lance les containers
+            bat '''
+            docker-compose down
+            set TAG=%BUILD_ID% && docker-compose up -d --build
+            '''
+        }
+    }
+}
     }
     
     post {
