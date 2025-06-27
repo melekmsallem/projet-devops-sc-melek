@@ -6,14 +6,16 @@ pipeline {
     }
     environment {
         DOCKER_HOST = "tcp://localhost:2375"
-        MAVEN_OPTS = "-Dmaven.repo.local=.m2/repository"  # Cache local
+        MAVEN_OPTS = "-Dmaven.repo.local=.m2/repository"  // Cache local - Notez les // au lieu de #
     }
 
     stages {
         stage('Build & Test') {
             parallel {
                 stage('Build') {
-                    steps { bat 'mvn -B clean package -DskipTests' }
+                    steps {
+                        bat 'mvn -B clean package -DskipTests'
+                    }
                 }
                 stage('Test') {
                     steps {
